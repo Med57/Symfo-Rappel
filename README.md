@@ -1,1 +1,2 @@
-# Symfo-Rappel
+Anti-Seche pour Symfony
+=======================
