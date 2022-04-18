@@ -20,4 +20,4 @@ Ces méthodes permettent notamment de :
 ## Création d'un Controller
 
 - commande :</br>
-```bin/console make:controller ControllerName```
+```php bin/console make:controller ControllerName```

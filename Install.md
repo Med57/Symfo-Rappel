@@ -3,19 +3,19 @@ Installation Projet
 
 Installation pour une application.
 
-```php
+```bash
 composer create-project symfony/website-skeleton my-project 
 ```
 
 Installation pour API etc...
 
-```php
+```bash
 composer create-project symfony/skeleton my-project
 ```
 
 Execution d'un serveur via le serveur de developpement PHP:
 
-```php
+```bash
 php -S 0.0.0.0:8000 -t public
 ```
 

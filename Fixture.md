@@ -3,17 +3,17 @@ Fixture
 
 - construire une fixture :
 
-```bin/console make:fixtures```
+```bash bin/console make:fixtures```
 
 - charger les fixtures :
 
-```bin/console doctrine:fixtures:load```
+```bash bin/console doctrine:fixtures:load```
 
 Cette commande purgera la base de données pour la recharger avec les donné dans la fonction load.
 
 - Exemple de code avec l'utilisisation de faker.
 
-```
+```php
 $faker = Factory::create('fr_FR');
 $faker->addProvider(new MovieProvider($faker));
 
@@ -31,7 +31,7 @@ for ($i=0; $i < 1500; $i++) {
 
 - Pour charger les données avant des autre donnée il faut utiliser la fonction : 
 
-```
+```php
 public function getDependencies()
     {
         // On veux absolument que les fixture de Genre soit éxecuté AVANT

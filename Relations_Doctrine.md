@@ -5,7 +5,7 @@ Relation Doctrine
 
 - Le plus simple pour construire une relation est d'utilisé le wizard avec la commande : 
 
-```bin/console make:entity```
+```bash bin/console make:entity```
 
 et choisir l'entité a créer ou modifier et au moment de choisir le type de colonne a créer choisir ```Relation```
 
@@ -25,7 +25,7 @@ OneToMany
 N de mon coté, et N de l'autre
 ManyToMany
 
-```
+```php
 What type of relationship is this?
  ------------ ------------------------------------------------------------------ 
   Type         Description                                                       
@@ -47,7 +47,7 @@ Ce qui est important pour Doctrine c'est qui porte la relation : mappedBy OU inv
 
 ManyToOne
 Je suis le porteur de la relation, c'est moi qui dans la base contient la FK. Dans le code, je doit avoir :
-```
+```php
 /* dans la classe Post
 * @ORM\ManyToOne(targetEntity=Author::class, inversedBy="posts")
 */
@@ -57,7 +57,7 @@ J'ai donc une propriété dans ma classe porteuse avec un objet de la classe cor
 
 OneToMany
 Je NE suis PAS le porteur de la relation, c'est l'autre qui dans la base contient la FK. Dans le code, je doit avoir :
-```
+```php
 /** dans la classe Author
  * @ORM\OneToMany(targetEntity=Post::class, mappedBy="author")
  */
@@ -67,7 +67,7 @@ J'ai donc une propriété dans ma classe avec un ArrayCollection qui contient to
 
 ManyToMany
 Aucune des deux tables ne porte de FK, il y a une table pivot. Dans le code je doit avoir :
-```
+```php
 /** dans la classe Tag
  * @ORM\ManyToMany(targetEntity=Post::class, mappedBy="tags")
  */

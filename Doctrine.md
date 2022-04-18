@@ -10,23 +10,23 @@ Doctrine
 
 - Crée une copie de .env et le renommé en .env.local et completer les infos.
 
-```DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/db_name?serverVersion=mariadb-10.3.34"```
+```php DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/db_name?serverVersion=mariadb-10.3.34"```
 
 ## Utilisation
 
 ### BDD
 
 - Création d'une base de donnée 
-```php bin/console doctrine:database:create```
+```bash bin/console doctrine:database:create```
 
 ### Entité
 
 - Création d'une Entitée
-```php bin/console make:entity```
+```bash bin/console make:entity```
 
 - Les infos de mappings sont dans les commentaires, elles permettent de faire le liens vers les differentes tables/colonnes ainsi les regles qui les regissent .
 
-```
+```php
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -63,26 +63,26 @@ class Product
 ```
 
 - Valider les regles avec la commande :</br>
-``` php bin/console doctrine:schema:validate ```
+```bash bin/console doctrine:schema:validate ```
 
 - Pour generer les getter/setter ou regenerer les getter/setter apres une eventuel modification d'une Entité utilisé la commande :</br>
-``` php bin/console make:entity --regenerate ```
+```bash bin/console make:entity --regenerate ```
 
 ### Migration 
 
 - pour generer une migration suite a la creation d'une Entité utilisé la commande :</br>
-```bin/console make:migration```</br>
-```bin/console ma:mi```
+```bash bin/console make:migration```</br>
+```bash bin/console ma:mi```
 
 - pour executer une migration : </br>
-```bin/console doctrine:migrations:migrate```</br>
-```bin/console d:m:m```
+```bash bin/console doctrine:migrations:migrate```</br>
+```bash bin/console d:m:m```
 
 ### Entity Manager
 
 - Permet de persister les objets vers la base de données
 
-```
+```php
 namespace App\Controller;
 
 use App\Entity\Product;
@@ -113,8 +113,9 @@ class ProductController extends Controller
 ### Repository
 
 - Permet de recuperer des objets depuis la base de données.
+- Possibilité de créer des methodes personnalisées dans le Repository.
 
-```
+```php
 src/Controller/ProductController.php
 
 /**
@@ -135,8 +136,7 @@ public function show($id, ProductRepository $productRepository) // On fais une i
 ```
 
 - Select : 
-
-```
+```php
 // query for a single product by its primary key (usually "id")
 $product = $repository->find($productId);
 
@@ -152,7 +152,7 @@ $products = $repository->findAll();
 ```
 
 - Les methodes findBy et findOneBy (Repository): 
-```
+```php
 // Permet de faire une requete en recuperant 1 seul objet avec plusieurs criteres.
 $product = $repository->findOneBy(
     array('name' => 'Keyboard', 'price' => 1999)
@@ -167,7 +167,7 @@ $products = $repository->findBy(
 
 - Update ( Repository )
 
-```
+```php
 // Après avoir récupéré l'objet
 $product->setName('New product name!');
 $em->flush();
@@ -176,7 +176,7 @@ $em->flush();
 
 - Delete ( EntityManager)
 
-```
+```php
 // Après avoir récupéré l'objet
 $em->remove($post); // en mémoire (intention)
 $em->flush(); // en bdd ! (execute DELETE)
@@ -191,7 +191,7 @@ C'est un langage qui ressemble fortement à SQL. C'est propre à doctrine.
 
 - C'est une classe qui va nous proposer de créer des requetes depuis le repository. On ne fait toujours pas de SQL, un construit à partir de nos entités
 
-```
+```php
 /**
 * Get Casting + Person for a given movie
 */
