@@ -1,6 +1,10 @@
 Fixture 
 =========
 
+- commande pour installer les fixtures : 
+
+```bash composer require orm-fixtures```
+
 - construire une fixture :
 
 ```bash bin/console make:fixtures```
