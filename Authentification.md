@@ -7,7 +7,7 @@ Authentification
 
 - ```bash composer require security``` => composant necessaire pour la mise en place d'un systeme d'authentification.
 
-- ```bash bin/console make user``` => commande pour la mise en place du systeme d'utilisateur.
+- ```bash bin/console make:user``` => commande pour la mise en place du systeme d'utilisateur.
 
 
 ```php
