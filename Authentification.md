@@ -86,7 +86,7 @@ on va donc faire l'injection dans le constructeur, et le stocker dans une propri
 
 ## make:aut
 
-```bash bin/console make:aut```
+```bash bin/console make:authenticate```
 
 ```php
 bin/console make:auth
