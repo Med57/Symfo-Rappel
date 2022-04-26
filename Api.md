@@ -156,55 +156,282 @@ use Nelmio\ApiDocBundle\Annotation\Model;
      * )
 ```
 
-## correction Challenge Event
+## Mon Api me donne pas la bonne route
 
-### Event Kernel
+je vérifie que j'arrive dans la bonne méthode en rajoutant sur la première ligne :
 
-```bash
-bin/console make:subscriber
-
-Choose a class name for your event subscriber (e.g. ExceptionSubscriber):
- > Maintenance
-
-  What event do you want to subscribe to?:
- > kernel.response
-
- created: src/EventSubscriber/MaintenanceSubscriber.php
-
-           
-  Success! 
-           
+```php
+die("Tu es passé par ici");
 ```
 
-### Event Doctrine
+Si je n'arrive pas dans cette méthode, je débug mes routes
 
 ```bash
-bin/console make:ent
- Class name of the entity to create or update (e.g. OrangePizza):
- > Movie
- Your entity already exists! So let's add some new fields!
- New property name (press <return> to stop adding fields):
- > updatedAt
- Field type (enter ? to see all types) [datetime_immutable]:
- > datetime
- Can this field be null in the database (nullable) (yes/no) [no]:
- > y
- updated: src/Entity/Movie.php
- Add another property? Enter the property name (or press <return> to stop adding fields):
- > 
-           
-  Success! 
-           
+bin/console debug:router
 ```
+
+Si je n'ai pas de conflit de route
+Est ce que il n'y a pas une route qui serait au dessus dans la liste de debug qui prendrais la main avant ma route.
+
+Il faut ABSOLUMENT penser à mettre des requirements sur les routes qui ont des paramètres
+
+```php
+// requirements={"id":"\d+"}
+// requirements={"slug": "\w+(-\w*)*"}
+```
+
+En dernier recours, on peut utiliser le profiler
+Sauf que l'on a pas le lien direct depuis notre page API
+il faut y aller manuellement : http://localhost:8080/_profiler/
+Ensuite on peut cliquer sur un des appels en erreur, et on retrouve notre profiler > routing
+
+## POST et deserialize
+
+Quand on est en mode "API", si on permet la création avec la route `POST`, on doit s'attendre à recevoir du JSON.
+
+Simple en PHP, on `deserialize` le json que l'on reçoit et 💥 on a un objet PHP.
+
+On injecte la requète HTTP dans notre fonction pour en récupérer le contenu
+
+```php
+use Symfony\Component\HttpFoundation\Request;
+public function createItem(Request $request)
+{
+    // Récupérer le contenu JSON
+    $jsonContent = $request->getContent();
+```
+
+Comme prévu on `deserialize`, c'est à dire que l'on transforme le JSON en Objet en précisant l'entité que l'on veux.
+
+On n'oublie pas d'injecter le Serializer de Symfony
+
+```php
+use Symfony\Component\Serializer\SerializerInterface;
+public function createItem(Request $request, SerializerInterface $serializer)
+{
+    // Récupérer le contenu JSON
+    $jsonContent = $request->getContent();
+    // Désérialiser (convertir) le JSON en entité Doctrine Movie
+    $movie = $serializer->deserialize($jsonContent, Movie::class, 'json');
+```
+
+🎉 trop facile, on donnes ça à Doctrine pour qu'il le mettes en BDD et c'est bon 💪
+
+```php
+use Doctrine\ORM\EntityManagerInterface;
+public function createItem(Request $request, SerializerInterface $serializer, EntityManagerInterface $doctrine)
+{
+    // Récupérer le contenu JSON
+    $jsonContent = $request->getContent();
+    // Désérialiser (convertir) le JSON en entité Doctrine Movie
+    $movie = $serializer->deserialize($jsonContent, Movie::class, 'json');
+    // On sauvegarde l'entité
+    $doctrine->persist($movie);
+    $doctrine->flush();
+```
+
+😅 `SQLSTATE[xxxx] xxxx cannot be null`
+
+Comment ça MySQL n'est pas content ? 👿
+
+Ben oui, il manque des données, on va demander à Symfony de nous valider tout ça 💪 et surtout de nous dire ce qui coince.
+Comme ça on prévient notre utilisateur en front et on lui décrit les problèmes pour qu'il s'adapte et qu'il nous envoie les bonnes données.
+
+```php
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+public function createItem(Request $request, SerializerInterface $serializer, EntityManagerInterface $doctrine, ValidatorInterface $validator)
+{
+    // Récupérer le contenu JSON
+    $jsonContent = $request->getContent();
+    // Désérialiser (convertir) le JSON en entité Doctrine Movie
+    $movie = $serializer->deserialize($jsonContent, Movie::class, 'json');
+    // Valider l'entité
+    // @link : https://symfony.com/doc/current/validation.html#using-the-validator-service
+    $errors = $validator->validate($movie);
+    // Y'a-t-il des erreurs ?
+    if (count($errors) > 0) {
+        // @todo Retourner des erreurs de validation propres
+        return $this->json($errors, Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+    // On sauvegarde l'entité
+    $doctrine->persist($movie);
+    $doctrine->flush();
+
+    // on renvoit un code 201 et l'objet crée
+    return $this->json($movie, Response::HTTP_CREATED);
+```
+
+## Securiser notre API
+
+[LexikJWTAuthenticationBundle](https://github.com/lexik/LexikJWTAuthenticationBundle)
 
 ```bash
-bin/console ma:mi
-bin/console d:m:m
+composer require "lexik/jwt-authentication-bundle"
 ```
 
-#### Avec EntityListener
+On génère les clé de chiffrement des Tokens
 
-[doc](https://symfony.com/doc/current/doctrine/events.html#doctrine-entity-listeners)
+```bash
+bin/console lexik:jwt:generate-keypair
+```
+
+on modifie la durée de validité du token : lexik_jwt_authentication.yaml
+
+```yaml
+    token_ttl: 64800 # 18h
+```
+
+On modifie le fichier security.yaml pour "activer" la sécurité
+
+```yaml
+security:
+       enable_authenticator_manager: true
+       # ...
+       
+       firewalls:
+           login:
+               pattern: ^/api/login
+               stateless: true
+               json_login:
+                   check_path: /api/login_check
+                   success_handler: lexik_jwt_authentication.handler.authentication_success
+                   failure_handler: lexik_jwt_authentication.handler.authentication_failure
+           api:
+               pattern:   ^/api
+               stateless: true
+               jwt: ~
+       access_control:
+           - { path: ^/api/login, roles: PUBLIC_ACCESS }
+           - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
+
+```
+
+la dernière chose, rajouter la route pour check le token : route.yaml
+
+```yaml
+   api_login_check:
+       path: /api/login_check
+```
+
+si on teste une de nos routes on doit recevoir
+
+```json
+{
+	"code": 401,
+	"message": "JWT Token not found"
+}
+```
+
+### Authentification API
+
+on doit utiliser la route `api/login_check` en fournissant un json avec le login et le mot de passe
+Ce sont les mêmes logins/mdp que nous avons créer pour notre authentification back
+
+```json
+{
+	"username":"user@user.com",
+	"password":"user"
+}
+```
+
+Si je fournit les bon couple login/mdp je reçoit mon token
+
+```json
+{
+	"token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE2NTA1NDQzODYsImV4cCI6MTY1MDYwOTE4Niwicm9sZXMiOlsiUk9MRV9VU0VSIl0sInVzZXJuYW1lIjoidXNlckB1c2VyLmNvbSJ9.KZ_GK4o6JaX7yHuVbWeq_1VGhZ6unqPIRgxrtsvfoN9VMKfS0mDk5y9ZMTotvvTv1QR8uVnVp3qOTtDx8iYtndRL7M8iFPGkoKssjJgCMsvGOlnuQqHySLsqeQtgCJX3MEltEC6_716c3k5O9YBbyxbNO8MtovctqtbyMZfEtU38Gl6Y-i_gY6kYjwS_-NGk3P7C1g0JNwq19kMt4Hk0YC_gxYbtduBouLPIGwGW2RFWbZYMW3NwelHI-RF5C0xBN0yhq8ukp0-Syw-MehCZGVTs0u465iUXQ6FLFCgh0X5Yq78XmQW6SpkdChs7eoDIGKUupR9UTMsynH_-y5icng"
+}
+```
+
+### si on utilise nelmio api doc
+
+On doit parametrer la doc pour pouvoir s'authentifier
+
+`config/packages/security.yaml`
+
+```YAML
+firewalls:
+    # bundle openAPI
+    nelmio_api_doc:
+        pattern: ^/api/doc
+        stateless: true
+access_control:            
+    - { path: ^/api/secure, roles: IS_AUTHENTICATED_FULLY }
+```
+
+`config/packages/nelmio_api_doc.yaml`
+
+```YAML
+nelmio_api_doc:
+    documentation:
+        # https://swagger.io/docs/specification/authentication/bearer-authentication/
+        components:
+            securitySchemes:
+                bearerAuth:            # arbitrary name for the security scheme this will be use in annotations @Security(name="bearerAuth")
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT 
+        security:
+            - bearerAuth: []
+```
+
+Cela active le bouton d'authentification, ce qui permet de s'authentifier en fournissant le token.
+Toutes les requetes qui seront faites à l'API seront envoyés avec le header `Authorization: Bearer`, on verras plus tard comment on désactive l'auth sur certaine routes.
+
+Donc on est bon ici, mais comme la route de Lexkit n'est pas trouvé par Nelmio et nous n'y avons pas accès, donc ça perd de son interêt si on doit ouvrir insomnia pour avoir le token.
+
+J'ai donc fabriqué de tout pièces une description de route pour l'afficher
+
+`config/packages/nelmio_api_doc.yaml`
+
+```YAML
+nelmio_api_doc:
+    documentation:
+        # https://swagger.io/docs/specification/paths-and-operations/
+        paths: # documentation de la route pour obtenir le token lexkit
+            /api/login_check:
+                post:
+                    summary: Auth method
+                    description: authenticate method
+                    # https://swagger.io/docs/specification/grouping-operations-with-tags/
+                    tags:
+                        - O'Flix API Auth
+                    # https://swagger.io/docs/specification/describing-parameters/
+                    requestBody:
+                        description: JSON Object
+                        required: true
+                        content: 
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        username:
+                                            type: string
+                                        password:
+                                            type: string
+                    responses:
+                        '200':
+                            description: JWT Token
+                            content:
+                                application/json:
+                                    schema: 
+                                        type: object
+                                        properties:
+                                            token:
+                                                type: string
+```
+
+On a donc une nouvelle route qui apparait et qui permet de donner son username/password et d'obtenir le token.
+On pourra ensuite le donner via le bouton `Authorize` et le tour est joué.
+
+Pour désactiver l'envoi du token, disons pour une partie open de notre API, il y a des annotations à placer sur la route/controller
+
+```php
+use Nelmio\ApiDocBundle\Annotation\Security;
+/**
+* @Security(name=null) pas de sécurité
+* @Security(name="bearerAuth") le nom de la sécurité à appliquer
+*/
+```
 
 ## Relations
 
