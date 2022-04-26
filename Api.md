@@ -1,5 +1,3 @@
-# E17 : API
-
 # API
 
 un logiciel offre des services à d'autres logiciels
