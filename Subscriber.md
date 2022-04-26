@@ -38,6 +38,57 @@ bin/console make:subscriber
 
   What event do you want to subscribe to?:
  > kernel.controller
+ 
+ ## Exercice 
+ 
+ ### Event Kernel
+
+```bash
+bin/console make:subscriber
+
+Choose a class name for your event subscriber (e.g. ExceptionSubscriber):
+ > Maintenance
+
+  What event do you want to subscribe to?:
+ > kernel.response
+
+ created: src/EventSubscriber/MaintenanceSubscriber.php
+
+           
+  Success! 
+           
+```
+
+### Event Doctrine
+
+```bash
+bin/console make:ent
+ Class name of the entity to create or update (e.g. OrangePizza):
+ > Movie
+ Your entity already exists! So let's add some new fields!
+ New property name (press <return> to stop adding fields):
+ > updatedAt
+ Field type (enter ? to see all types) [datetime_immutable]:
+ > datetime
+ Can this field be null in the database (nullable) (yes/no) [no]:
+ > y
+ updated: src/Entity/Movie.php
+ Add another property? Enter the property name (or press <return> to stop adding fields):
+ > 
+           
+  Success! 
+           
+```
+
+```bash
+bin/console ma:mi
+bin/console d:m:m
+```
+
+#### Avec EntityListener
+
+[doc](https://symfony.com/doc/current/doctrine/events.html#doctrine-entity-listeners)
+
 
  created: src/EventSubscriber/RandomMovieSubscriber.php
 
