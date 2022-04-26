@@ -24,6 +24,8 @@ bin/console make:controller --no-template
   Success! 
            
 
+32
+A circular reference has been detected when serializing the object of class "App\Entity\Mo
 ```
 
 ## JSON
@@ -203,3 +205,25 @@ bin/console d:m:m
 #### Avec EntityListener
 
 [doc](https://symfony.com/doc/current/doctrine/events.html#doctrine-entity-listeners)
+
+## Relations
+
+Si besoin d'associer des entités existantes (par ex. genres sur movie), on envoie un tableau d'ids dans la propriété JSON concernée, ex. :
+
+```json
+{
+  "title": "Avatar",
+  "type": "Film",
+  "duration": 120,
+  "rating": 5,
+  "summary": "xxx",
+  "synopsis": "xxx",
+  "releaseDate": "1984-10-05T02:00:44+01:00",
+  "poster": "https://m.media-amazon.com/images/M/MV5BYjg4ZjUzMzMtYzlmYi00YTcwLTlkOWUtYWFmY2RhNjliODQzXkEyXkFqcGdeQXVyNTUyMzE4Mzg@._V1_SX300.jpg",
+  "genres": [1, 2]
+}
+```
+
+Et on doit mettre en place un _Entity Denormalizer_ pour permettre au Serializer de convertir l'id en entité Doctrine.
+
+Exemple de code : https://gist.github.com/benlac/c9efc733ee16ebd0d438119bcccb92b9
